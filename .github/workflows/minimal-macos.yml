@@ -1,0 +1,62 @@
+name: Minimal macOS client
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/minimal-macos.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minimal-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: |
+          npm run format:check
+          cargo fmt --all -- --check
+
+      - name: Build desktop UI
+        run: npm run build --workspace desktop
+
+      - name: Check embedded desktop engine
+        run: cargo check -p rqbit-desktop
