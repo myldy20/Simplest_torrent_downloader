@@ -23,9 +23,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  validate-and-package:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
@@ -61,3 +61,17 @@ jobs:
 
       - name: Check embedded desktop engine
         run: cargo check -p rqbit-desktop
+
+      - name: Build unsigned macOS app and DMG
+        working-directory: desktop
+        run: npm run tauri -- build --bundles app,dmg
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simplest-Torrent-macOS-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            target/release/bundle/macos/*.app
+            target/release/bundle/dmg/*.dmg
