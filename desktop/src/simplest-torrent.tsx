@@ -1,9 +1,13 @@
-import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import {
-  CurrentDesktopState,
-  RqbitDesktopConfig,
-} from "./configuration";
+  ChangeEvent,
+  DragEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { CurrentDesktopState, RqbitDesktopConfig } from "./configuration";
 
 type TorrentState = "initializing" | "paused" | "live" | "error";
 
@@ -46,7 +50,12 @@ function errorMessage(error: unknown): string {
   if (typeof error === "string") return error;
   if (error && typeof error === "object") {
     const value = error as InvokeError;
-    return value.human_readable ?? value.message ?? value.status_text ?? "Unknown error";
+    return (
+      value.human_readable ??
+      value.message ??
+      value.status_text ??
+      "Unknown error"
+    );
   }
   return "Unknown error";
 }
@@ -54,7 +63,10 @@ function errorMessage(error: unknown): string {
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
   const value = bytes / 1024 ** index;
   return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
 }
@@ -87,9 +99,12 @@ async function readFileAsBase64(file: File): Promise<string> {
         return;
       }
       const encoded = result.split(",")[1];
-      encoded ? resolve(encoded) : reject(new Error("Could not encode the torrent file"));
+      encoded
+        ? resolve(encoded)
+        : reject(new Error("Could not encode the torrent file"));
     };
-    reader.onerror = () => reject(reader.error ?? new Error("Could not read the torrent file"));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Could not read the torrent file"));
     reader.readAsDataURL(file);
   });
 }
@@ -236,7 +251,10 @@ export function SimplestTorrentApp() {
   const toggleTorrent = async (torrent: TorrentListItem) => {
     setError(null);
     try {
-      const command = torrent.stats?.state === "paused" ? "torrent_action_start" : "torrent_action_pause";
+      const command =
+        torrent.stats?.state === "paused"
+          ? "torrent_action_start"
+          : "torrent_action_pause";
       await invoke(command, { id: torrent.id });
       await refresh();
     } catch (reason) {
@@ -280,7 +298,9 @@ export function SimplestTorrentApp() {
       <header className="app-header">
         <div>
           <div className="brand-row">
-            <span className="brand-mark" aria-hidden="true">↓</span>
+            <span className="brand-mark" aria-hidden="true">
+              ↓
+            </span>
             <h1>Simplest Torrent</h1>
           </div>
           <p>Drop. Download. Done.</p>
@@ -310,11 +330,18 @@ export function SimplestTorrentApp() {
               spellCheck={false}
               placeholder="/Users/you/Downloads"
             />
-            <button type="button" onClick={saveFolder} disabled={busy || !folderDraft.trim()}>
+            <button
+              type="button"
+              onClick={saveFolder}
+              disabled={busy || !folderDraft.trim()}
+            >
               Save
             </button>
           </div>
-          <small>Use an absolute macOS path. Existing downloads remain where they are.</small>
+          <small>
+            Use an absolute macOS path. Existing downloads remain where they
+            are.
+          </small>
         </section>
       )}
 
@@ -341,12 +368,16 @@ export function SimplestTorrentApp() {
           disabled={busy || loading}
           onClick={() => fileInput.current?.click()}
         >
-          <span className="drop-icon" aria-hidden="true">＋</span>
+          <span className="drop-icon" aria-hidden="true">
+            ＋
+          </span>
           <strong>{dragging ? "Drop it" : "Choose or drop a .torrent"}</strong>
           <span>It starts immediately in your download folder</span>
         </button>
 
-        <div className="divider"><span>or</span></div>
+        <div className="divider">
+          <span>or</span>
+        </div>
 
         <form
           className="magnet-form"
@@ -371,7 +402,13 @@ export function SimplestTorrentApp() {
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Dismiss error">×</button>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -384,7 +421,9 @@ export function SimplestTorrentApp() {
         {loading ? (
           <div className="empty-state">Starting the torrent engine…</div>
         ) : torrents.length === 0 ? (
-          <div className="empty-state">Nothing here. That is the whole point.</div>
+          <div className="empty-state">
+            Nothing here. That is the whole point.
+          </div>
         ) : (
           <div className="torrent-list">
             {torrents.map((torrent) => {
@@ -392,33 +431,51 @@ export function SimplestTorrentApp() {
               const progress = progressFor(torrent);
               const paused = stats?.state === "paused";
               return (
-                <article className="torrent-row" key={`${torrent.id}-${torrent.info_hash}`}>
+                <article
+                  className="torrent-row"
+                  key={`${torrent.id}-${torrent.info_hash}`}
+                >
                   <div className="torrent-main">
                     <div className="torrent-heading">
                       <strong title={torrent.name ?? torrent.info_hash}>
                         {torrent.name ?? "Resolving magnet…"}
                       </strong>
-                      <span className={`status status-${stats?.state ?? "initializing"}`}>
+                      <span
+                        className={`status status-${stats?.state ?? "initializing"}`}
+                      >
                         {statusFor(torrent)}
                       </span>
                     </div>
-                    <div className="progress-track" aria-label={`${Math.round(progress * 100)} percent`}>
+                    <div
+                      className="progress-track"
+                      aria-label={`${Math.round(progress * 100)} percent`}
+                    >
                       <span style={{ width: `${progress * 100}%` }} />
                     </div>
                     <div className="torrent-meta">
                       <span>{Math.round(progress * 100)}%</span>
-                      <span>{formatBytes(stats?.progress_bytes ?? 0)} / {formatBytes(stats?.total_bytes ?? 0)}</span>
+                      <span>
+                        {formatBytes(stats?.progress_bytes ?? 0)} /{" "}
+                        {formatBytes(stats?.total_bytes ?? 0)}
+                      </span>
                       {stats?.live?.download_speed.human_readable && (
-                        <span>↓ {stats.live.download_speed.human_readable}</span>
+                        <span>
+                          ↓ {stats.live.download_speed.human_readable}
+                        </span>
                       )}
                       {stats?.live?.time_remaining?.human_readable && (
-                        <span>{stats.live.time_remaining.human_readable} left</span>
+                        <span>
+                          {stats.live.time_remaining.human_readable} left
+                        </span>
                       )}
                     </div>
                   </div>
                   <div className="torrent-actions">
                     {!stats?.finished && (
-                      <button type="button" onClick={() => void toggleTorrent(torrent)}>
+                      <button
+                        type="button"
+                        onClick={() => void toggleTorrent(torrent)}
+                      >
                         {paused ? "Resume" : "Pause"}
                       </button>
                     )}
