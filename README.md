@@ -1,49 +1,86 @@
 # Simplest Torrent
 
 <p align="center">
-  <img src="docs/hero.svg" alt="Simplest Torrent macOS app" width="100%" />
+  <img src="docs/hero.svg" alt="Simplest Torrent for macOS" width="100%" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.1"><img alt="Download for Apple Silicon macOS" src="https://img.shields.io/badge/download-Apple%20Silicon%20macOS-black?style=for-the-badge&logo=apple"></a>
 </p>
 
 <p align="center">
   <img alt="Version: 0.1.0 alpha 1" src="https://img.shields.io/badge/version-0.1.0--alpha.1-6c70f5.svg">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
-  <img alt="Platform: macOS" src="https://img.shields.io/badge/platform-macOS-black.svg">
-  <img alt="UI: Tauri + React" src="https://img.shields.io/badge/UI-Tauri%20%2B%20React-6c70f5.svg">
-  <a href="https://github.com/ikatson/rqbit"><img alt="Engine: rqbit" src="https://img.shields.io/badge/engine-rqbit-5b7cfa.svg"></a>
+  <img alt="Engine: rqbit" src="https://img.shields.io/badge/engine-rqbit-5b7cfa.svg">
 </p>
 
 A deliberately tiny torrent downloader for macOS.
 
-Choose a `.torrent` file, drop it onto the window, or paste a magnet link. The download starts immediately in the configured folder. No browser UI, no setup wizard, no media server, no statistics cockpit.
+Choose a `.torrent` file, drop it onto the window, or paste a magnet link. The download starts immediately. No browser UI, setup wizard, media server, statistics cockpit, or other distractions.
 
-> The repository name contains the historical typo `Simpliest_torrent_downloader`. The product name is **Simplest Torrent**.
+This is the client for the moment when you need to download a 100 MB file and launching a full torrent application feels excessive.
 
-## What it does
+## Download and install
 
-- opens local `.torrent` files;
-- accepts drag-and-drop;
-- accepts magnet links;
-- downloads to the macOS Downloads folder by default;
-- lets you change the destination path;
-- shows progress, speed and remaining time;
-- supports pause and resume;
-- remembers unfinished downloads;
-- stops completed torrents automatically;
-- removes entries from the list without deleting downloaded files.
+The current build supports **Apple Silicon Macs**: M1, M2, M3, M4 and newer.
 
-That is intentionally almost the entire feature list.
+1. Open the [v0.1.0-alpha.1 release](https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.1).
+2. Download the `.dmg` file.
+3. Open it and move **Simplest Torrent.app** to `/Applications`.
+4. The alpha is not signed or notarized yet. Open Terminal once and run:
 
-## Download an alpha build
+```bash
+xattr -dr com.apple.quarantine "/Applications/Simplest Torrent.app"
+open "/Applications/Simplest Torrent.app"
+```
 
-Every successful `Minimal macOS client` workflow run publishes a zipped build artifact containing both the `.app` bundle and an Apple Silicon `.dmg`.
+This removes quarantine only from Simplest Torrent. It does **not** disable Gatekeeper globally.
 
-Open the relevant GitHub Actions run and download the `Simplest-Torrent-macOS-*` artifact. Alpha builds are currently unsigned and not notarized, so macOS may require **Control-click → Open** on first launch. Do not disable Gatekeeper globally.
+## Use it
 
-## Status
+- click the large area to choose a `.torrent` file;
+- or drag a `.torrent` file onto the window;
+- or paste a magnet link and click **Download**;
+- use the gear button to change the destination folder;
+- pause, resume or remove a download from the list.
 
-Early alpha. The interface has been replaced, but the torrent engine remains the battle-tested Rust implementation from [rqbit](https://github.com/ikatson/rqbit).
+The default destination is your macOS `Downloads` folder. Enter an absolute path such as:
 
-The first supported target is Apple Silicon macOS. The underlying Tauri project can also be built elsewhere, but cross-platform packaging and Intel binaries are not current goals.
+```text
+/Users/your-name/Downloads/torrent
+```
+
+Missing folders are created automatically. Changing the destination affects new downloads; files already downloaded stay where they are.
+
+## Intentionally small feature set
+
+- `.torrent` files and magnet links;
+- immediate download to a configured folder;
+- progress, speed and remaining time;
+- pause and resume;
+- session restore after restarting the app;
+- automatic stop after completion;
+- remove from the list without deleting downloaded files.
+
+That is intentionally almost the entire product.
+
+## Current status
+
+**0.1.0-alpha.1** is an early public alpha, tested on an Apple Silicon Mac.
+
+Known limitation: the application is currently distributed without an Apple Developer ID signature or notarization, so the one-time Terminal command above is required on recent macOS versions.
+
+The torrent engine is the mature Rust implementation from [rqbit](https://github.com/ikatson/rqbit). Simplest Torrent replaces its full desktop interface with a focused one-window workflow.
+
+## Privacy and behaviour
+
+- downloads go directly to the selected local folder;
+- unfinished downloads are remembered;
+- the optional local HTTP API is disabled on new installations;
+- completed torrents are paused automatically instead of seeding indefinitely;
+- removing a row keeps the downloaded files.
+
+BitTorrent exchanges data with peers while a download is active. Use the application only for content you are authorized to download and share.
 
 ## Build locally
 
@@ -52,7 +89,7 @@ Requirements:
 - current stable Rust toolchain;
 - Node.js 22 or newer;
 - npm;
-- Xcode Command Line Tools on macOS.
+- Xcode Command Line Tools.
 
 ```bash
 npm ci
@@ -78,25 +115,15 @@ Simplest Torrent
 └── docs/                    project artwork and documentation
 ```
 
-The UI talks directly to the embedded `librqbit` session through Tauri commands. The local HTTP API and upstream Web UI are not required for the minimal workflow.
-
-## Privacy and behaviour
-
-- The default download destination is the current user's Downloads folder.
-- Session persistence is enabled so interrupted downloads can resume.
-- New installations disable the optional local HTTP API.
-- Completed torrents are paused automatically instead of seeding indefinitely.
-- Removing a row keeps the downloaded files.
-
-BitTorrent still exchanges data with peers while a download is active. Use the application only for content you are authorized to download and share.
+The interface communicates directly with the embedded `librqbit` session through Tauri commands. The upstream Web UI and local HTTP API are not required.
 
 ## Upstream and licensing
 
 This repository is a downstream fork of [ikatson/rqbit](https://github.com/ikatson/rqbit).
 
-The codebase remains under the **Apache License 2.0**. The original copyright notice and license must remain with redistributed source or binaries. The new interface and project-specific modifications are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+The codebase remains under the **Apache License 2.0**. The original copyright notice and license remain with redistributed source and binaries. Project-specific modifications and attribution are documented in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-Apache-2.0 permits modification, redistribution and commercial use. It does **not** permit removing upstream attribution or using upstream trademarks to imply endorsement.
+Apache-2.0 permits modification, redistribution and commercial use. It does not permit removing upstream attribution or implying upstream endorsement.
 
 ## Contributing
 
