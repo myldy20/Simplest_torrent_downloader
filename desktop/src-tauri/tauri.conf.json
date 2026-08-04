@@ -14,20 +14,30 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "resources": [
+      "resources/LICENSE.txt",
+      "resources/THIRD_PARTY_NOTICES.md"
+    ],
+    "shortDescription": "A deliberately tiny torrent downloader powered by rqbit",
+    "longDescription": "Choose a torrent file, drop it onto the window, or paste a magnet link. Downloads start immediately in the configured folder."
   },
-  "productName": "rqbit-desktop",
+  "productName": "Simplest Torrent",
+  "version": "0.1.0-alpha.1",
   "mainBinaryName": "rqbit-desktop",
-  "identifier": "com.rqbit.desktop",
+  "identifier": "design.myldy.simplest-torrent",
   "plugins": {},
   "app": {
     "windows": [
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "rqbit",
-        "width": 1024,
-        "height": 600
+        "title": "Simplest Torrent",
+        "width": 780,
+        "height": 640,
+        "minWidth": 560,
+        "minHeight": 480,
+        "dragDropEnabled": false
       }
     ],
     "security": {

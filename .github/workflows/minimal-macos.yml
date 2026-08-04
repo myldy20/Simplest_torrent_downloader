@@ -1,0 +1,80 @@
+name: Minimal macOS client
+
+on:
+  push:
+    branches:
+      - main
+      - "agent/**"
+  pull_request:
+    paths:
+      - "desktop/**"
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/minimal-macos.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: minimal-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-package:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: |
+          npm run format
+          cargo fmt --all
+          git diff --exit-code
+
+      - name: Build desktop UI
+        run: npm run build --workspace desktop
+
+      - name: Test download folder handling
+        run: cargo test -p rqbit-desktop config::tests
+
+      - name: Check embedded desktop engine
+        run: cargo check -p rqbit-desktop
+
+      - name: Build unsigned macOS app and DMG
+        working-directory: desktop
+        run: npm run tauri -- build --bundles app,dmg
+
+      - name: Upload macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Simplest-Torrent-macOS-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            target/release/bundle/macos/*.app
+            target/release/bundle/dmg/*.dmg

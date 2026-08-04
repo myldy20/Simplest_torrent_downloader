@@ -1,0 +1,50 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="100" y1="30" x2="1080" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF1F7"/>
+      <stop offset="1" stop-color="#DDE5F5"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#5B7CFA"/>
+      <stop offset="1" stop-color="#825BF5"/>
+    </linearGradient>
+    <filter id="shadow" x="180" y="55" width="840" height="560" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#34415A" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" rx="34" fill="url(#bg)"/>
+  <circle cx="90" cy="85" r="170" fill="#7188F7" fill-opacity="0.13"/>
+  <circle cx="1110" cy="585" r="220" fill="#8064EC" fill-opacity="0.10"/>
+
+  <g filter="url(#shadow)">
+    <rect x="220" y="78" width="760" height="474" rx="24" fill="#FDFEFF"/>
+    <rect x="220" y="78" width="760" height="44" rx="24" fill="#E9EDF4"/>
+    <rect x="220" y="101" width="760" height="21" fill="#E9EDF4"/>
+    <circle cx="249" cy="100" r="7" fill="#FF6B63"/>
+    <circle cx="273" cy="100" r="7" fill="#FFC557"/>
+    <circle cx="297" cy="100" r="7" fill="#55C86B"/>
+
+    <rect x="258" y="150" width="34" height="34" rx="10" fill="url(#accent)"/>
+    <path d="M275 158V176M268 169L275 176L282 169" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="306" y="174" fill="#18202A" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="24" font-weight="700">Simplest Torrent</text>
+    <text x="258" y="198" fill="#77818E" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="12">Drop. Download. Done.</text>
+
+    <rect x="258" y="222" width="684" height="142" rx="16" fill="#F8FAFD" stroke="#D7DDE8"/>
+    <rect x="276" y="240" width="648" height="78" rx="12" fill="#FCFDFF" stroke="#C8D1DF" stroke-dasharray="7 6"/>
+    <rect x="581" y="252" width="38" height="38" rx="12" fill="#E9EDFF"/>
+    <path d="M600 261V281M590 271H610" stroke="#5B73DF" stroke-width="3" stroke-linecap="round"/>
+    <text x="500" y="306" fill="#3B4655" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="650">Choose or drop a .torrent</text>
+    <rect x="276" y="330" width="516" height="20" rx="8" fill="#FFFFFF" stroke="#D7DDE8"/>
+    <rect x="804" y="330" width="120" height="20" rx="8" fill="#5B73DF"/>
+
+    <text x="258" y="402" fill="#27313E" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="14" font-weight="700">Downloads</text>
+    <rect x="258" y="418" width="684" height="96" rx="14" fill="#FBFCFD" stroke="#E1E6ED"/>
+    <text x="278" y="447" fill="#2D3745" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="13" font-weight="650">example-release.iso</text>
+    <text x="866" y="447" fill="#4D67D2" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="11" font-weight="700">Downloading</text>
+    <rect x="278" y="461" width="644" height="6" rx="3" fill="#E4E8EF"/>
+    <rect x="278" y="461" width="438" height="6" rx="3" fill="url(#accent)"/>
+    <text x="278" y="492" fill="#7E8793" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="11">68%   ·   2.7 GB / 4.0 GB   ·   ↓ 18.4 MB/s   ·   1m 12s left</text>
+  </g>
+
+  <text x="600" y="598" text-anchor="middle" fill="#5C6674" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" font-size="16" font-weight="600">A deliberately tiny macOS torrent downloader powered by rqbit</text>
+</svg>

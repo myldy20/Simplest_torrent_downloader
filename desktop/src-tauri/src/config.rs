@@ -4,6 +4,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::Context;
 use librqbit::{
     ConnectionOptions, ListenerMode, ListenerOptions, PeerConnectionOptions, dht::PersistentDht,
     limits::LimitsConfig,
@@ -205,6 +206,24 @@ impl Default for RqbitDesktopConfig {
 
 impl RqbitDesktopConfig {
     pub fn validate(&self) -> anyhow::Result<()> {
+        if !self.default_download_location.is_absolute() {
+            anyhow::bail!("download folder must be an absolute path")
+        }
+
+        std::fs::create_dir_all(&self.default_download_location).with_context(|| {
+            format!(
+                "could not create download folder {}",
+                self.default_download_location.display()
+            )
+        })?;
+
+        if !self.default_download_location.is_dir() {
+            anyhow::bail!(
+                "download destination is not a folder: {}",
+                self.default_download_location.display()
+            )
+        }
+
         if self.upnp.enable_server {
             if self.http_api.disable {
                 anyhow::bail!("if UPnP server is enabled, you need to enable the HTTP API also.")
@@ -216,5 +235,46 @@ impl RqbitDesktopConfig {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::*;
+
+    fn unique_temp_path(name: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock before unix epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "simplest-torrent-{name}-{}-{nonce}",
+            std::process::id()
+        ))
+    }
+
+    #[test]
+    fn validate_creates_a_missing_nested_download_folder() {
+        let root = unique_temp_path("creates-folder");
+        let destination = root.join("downloads").join("torrent");
+        let mut config = RqbitDesktopConfig::default();
+        config.default_download_location = destination.clone();
+
+        config.validate().expect("configuration should be valid");
+
+        assert!(destination.is_dir());
+        std::fs::remove_dir_all(root).expect("temporary folder cleanup should succeed");
+    }
+
+    #[test]
+    fn validate_rejects_relative_download_paths() {
+        let mut config = RqbitDesktopConfig::default();
+        config.default_download_location = PathBuf::from("Downloads/torrent");
+
+        let error = config.validate().expect_err("relative path should fail");
+
+        assert!(error.to_string().contains("absolute path"));
     }
 }
