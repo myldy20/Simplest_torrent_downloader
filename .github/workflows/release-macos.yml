@@ -1,0 +1,123 @@
+name: Publish macOS alpha
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "desktop/**"
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/release-macos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-macos-alpha
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v0.1.0-alpha.1
+  RELEASE_TITLE: Simplest Torrent 0.1.0-alpha.1
+
+jobs:
+  build-and-publish:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Test download folder handling
+        run: cargo test -p rqbit-desktop config::tests
+
+      - name: Build Apple Silicon app and DMG
+        working-directory: desktop
+        run: npm run tauri -- build --bundles app,dmg
+
+      - name: Prepare release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="target/release/bundle/macos/Simplest Torrent.app"
+          SOURCE_DMG="$(find target/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
+          DMG="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.dmg"
+          ZIP="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.zip"
+
+          test -d "$APP"
+          test -f "$SOURCE_DMG"
+          cp "$SOURCE_DMG" "$DMG"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+
+          cat > RELEASE_NOTES.md <<'NOTES'
+          Minimal torrent downloader for Apple Silicon macOS.
+
+          Choose or drop a `.torrent` file, or paste a magnet link. Downloads start immediately and completed torrents stop automatically.
+
+          ## Installation
+
+          1. Download the `.dmg` below.
+          2. Move **Simplest Torrent.app** to `/Applications`.
+          3. This alpha is not signed or notarized. Run once in Terminal:
+
+             ```bash
+             xattr -dr com.apple.quarantine "/Applications/Simplest Torrent.app"
+             open "/Applications/Simplest Torrent.app"
+             ```
+
+          This command removes quarantine only from this application and does not disable Gatekeeper globally.
+
+          ## Platform
+
+          Apple Silicon Macs: M1, M2, M3, M4 and newer.
+
+          ## Licensing
+
+          Apache-2.0. Based on the rqbit engine; upstream notices are bundled with the application.
+          NOTES
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DMG="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.dmg"
+          ZIP="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.zip"
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$DMG" "$ZIP" --clobber
+            gh release edit "$RELEASE_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes-file RELEASE_NOTES.md \
+              --prerelease
+          else
+            gh release create "$RELEASE_TAG" "$DMG" "$ZIP" \
+              --target "$GITHUB_SHA" \
+              --title "$RELEASE_TITLE" \
+              --notes-file RELEASE_NOTES.md \
+              --prerelease
+          fi
