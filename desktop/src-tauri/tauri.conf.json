@@ -23,6 +23,7 @@
     "longDescription": "Choose a torrent file, drop it onto the window, or paste a magnet link. Downloads start immediately in the configured folder."
   },
   "productName": "Simplest Torrent",
+  "version": "0.1.0-alpha.1",
   "mainBinaryName": "rqbit-desktop",
   "identifier": "design.myldy.simplest-torrent",
   "plugins": {},
