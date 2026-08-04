@@ -1,0 +1,82 @@
+name: Generate agent icons
+
+on:
+  push:
+    branches:
+      - agent/minimal-macos-client
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/minimal-macos-client
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install Pillow
+      - name: Generate application icons
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFilter
+
+          size = 1024
+          canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+
+          shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+          shadow_draw = ImageDraw.Draw(shadow)
+          shadow_draw.rounded_rectangle((84, 98, 940, 954), radius=220, fill=(36, 45, 80, 115))
+          shadow = shadow.filter(ImageFilter.GaussianBlur(34))
+          canvas.alpha_composite(shadow)
+
+          gradient = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+          pixels = gradient.load()
+          start = (75, 132, 255)
+          end = (132, 79, 239)
+          for y in range(size):
+              for x in range(size):
+                  t = (x + y) / (2 * (size - 1))
+                  pixels[x, y] = tuple(round(start[i] * (1 - t) + end[i] * t) for i in range(3)) + (255,)
+
+          mask = Image.new("L", (size, size), 0)
+          ImageDraw.Draw(mask).rounded_rectangle((70, 70, 954, 954), radius=220, fill=255)
+          gradient.putalpha(mask)
+          canvas.alpha_composite(gradient)
+
+          shine = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+          shine_draw = ImageDraw.Draw(shine)
+          shine_draw.ellipse((-130, -310, 800, 570), fill=(255, 255, 255, 38))
+          shine.putalpha(Image.composite(shine.getchannel("A"), Image.new("L", (size, size), 0), mask))
+          canvas.alpha_composite(shine)
+
+          draw = ImageDraw.Draw(canvas)
+          white = (255, 255, 255, 255)
+          draw.rounded_rectangle((466, 258, 558, 610), radius=46, fill=white)
+          draw.polygon([(342, 522), (512, 704), (682, 522), (616, 456), (558, 518), (558, 610), (466, 610), (466, 518), (408, 456)], fill=white)
+          draw.rounded_rectangle((322, 736, 702, 808), radius=36, fill=(255, 255, 255, 225))
+
+          icon_dir = Path("desktop/src-tauri/icons")
+          icon_dir.mkdir(parents=True, exist_ok=True)
+          canvas.resize((32, 32), Image.Resampling.LANCZOS).save(icon_dir / "32x32.png")
+          canvas.resize((128, 128), Image.Resampling.LANCZOS).save(icon_dir / "128x128.png")
+          canvas.resize((256, 256), Image.Resampling.LANCZOS).save(icon_dir / "128x128@2x.png")
+          canvas.save(icon_dir / "icon.icns", format="ICNS")
+          canvas.save(icon_dir / "icon.ico", format="ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+          canvas.save(icon_dir / "icon.png")
+          PY
+      - name: Commit icons
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/src-tauri/icons
+          git commit -m "replace upstream icons with Simplest Torrent branding"
+          git push origin HEAD:agent/minimal-macos-client
