@@ -5,6 +5,7 @@
 </p>
 
 <p align="center">
+  <img alt="Version: 0.1.0 alpha 1" src="https://img.shields.io/badge/version-0.1.0--alpha.1-6c70f5.svg">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
   <img alt="Platform: macOS" src="https://img.shields.io/badge/platform-macOS-black.svg">
   <img alt="UI: Tauri + React" src="https://img.shields.io/badge/UI-Tauri%20%2B%20React-6c70f5.svg">
@@ -32,11 +33,17 @@ Choose a `.torrent` file, drop it onto the window, or paste a magnet link. The d
 
 That is intentionally almost the entire feature list.
 
+## Download an alpha build
+
+Every successful `Minimal macOS client` workflow run publishes a zipped build artifact containing both the `.app` bundle and an Apple Silicon `.dmg`.
+
+Open the relevant GitHub Actions run and download the `Simplest-Torrent-macOS-*` artifact. Alpha builds are currently unsigned and not notarized, so macOS may require **Control-click → Open** on first launch. Do not disable Gatekeeper globally.
+
 ## Status
 
 Early alpha. The interface has been replaced, but the torrent engine remains the battle-tested Rust implementation from [rqbit](https://github.com/ikatson/rqbit).
 
-The first supported target is macOS. The underlying Tauri project can also be built elsewhere, but cross-platform polish is not a current goal.
+The first supported target is Apple Silicon macOS. The underlying Tauri project can also be built elsewhere, but cross-platform packaging and Intel binaries are not current goals.
 
 ## Build locally
 
