@@ -52,8 +52,9 @@ jobs:
 
       - name: Check formatting
         run: |
-          npm run format:check
-          cargo fmt --all -- --check
+          npm run format
+          cargo fmt --all
+          git diff --exit-code
 
       - name: Build desktop UI
         run: npm run build --workspace desktop
