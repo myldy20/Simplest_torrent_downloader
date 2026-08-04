@@ -15,6 +15,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "resources/LICENSE.txt",
+      "resources/THIRD_PARTY_NOTICES.md"
+    ],
     "shortDescription": "A deliberately tiny torrent downloader powered by rqbit",
     "longDescription": "Choose a torrent file, drop it onto the window, or paste a magnet link. Downloads start immediately in the configured folder."
   },
