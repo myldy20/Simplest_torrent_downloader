@@ -22,8 +22,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RELEASE_TAG: v0.1.0-alpha.1
-  RELEASE_TITLE: Simplest Torrent 0.1.0-alpha.1
+  RELEASE_TAG: v0.1.0-alpha.2
+  RELEASE_TITLE: Simplest Torrent 0.1.0-alpha.2
 
 jobs:
   build-and-publish:
@@ -54,6 +54,9 @@ jobs:
       - name: Test download folder handling
         run: cargo test -p rqbit-desktop config::tests
 
+      - name: Test bounded file handle cache
+        run: cargo test -p librqbit storage::filesystem::fs::tests --lib
+
       - name: Build Apple Silicon app and DMG
         working-directory: desktop
         run: npm run tauri -- build --bundles app,dmg
@@ -64,8 +67,8 @@ jobs:
           set -euo pipefail
           APP="target/release/bundle/macos/Simplest Torrent.app"
           SOURCE_DMG="$(find target/release/bundle/dmg -maxdepth 1 -name '*.dmg' -print -quit)"
-          DMG="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.dmg"
-          ZIP="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.zip"
+          DMG="Simplest-Torrent-0.1.0-alpha.2-macOS-arm64.dmg"
+          ZIP="Simplest-Torrent-0.1.0-alpha.2-macOS-arm64.zip"
 
           test -d "$APP"
           test -f "$SOURCE_DMG"
@@ -76,6 +79,11 @@ jobs:
           Minimal torrent downloader for Apple Silicon macOS.
 
           Choose or drop a `.torrent` file, or paste a magnet link. Downloads start immediately and completed torrents stop automatically.
+
+          ## Fixed in alpha.2
+
+          - Download torrents with thousands of small files without running into the OS open-file limit.
+          - Include three upstream rqbit fixes for lock ordering, piece tracking and vectored writes.
 
           ## Installation
 
@@ -105,8 +113,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DMG="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.dmg"
-          ZIP="Simplest-Torrent-0.1.0-alpha.1-macOS-arm64.zip"
+          DMG="Simplest-Torrent-0.1.0-alpha.2-macOS-arm64.dmg"
+          ZIP="Simplest-Torrent-0.1.0-alpha.2-macOS-arm64.zip"
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release upload "$RELEASE_TAG" "$DMG" "$ZIP" --clobber

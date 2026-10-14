@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.0-alpha.2
+
+### Fixed
+
+- handle torrents containing thousands of small files without exhausting OS file descriptors, using a bounded lazy file-handle cache;
+- prevent potential peer-table deadlock when changing selected files (backport of upstream rqbit 9cb9709);
+- prevent duplicate downloads of already validated pieces after selection changes (upstream 5f0d0ba);
+- forward vectored writes through boxed torrent storage for better write efficiency (upstream 176484e).
+
+### Validation
+
+- tests for sequential access to 1,024 files and concurrent eviction across 300 files;
+- the reported 16,879-file torrent metadata was analyzed without adding it to the repository.
+
+
 ## 0.1.0-alpha.1
 
 First public Simplest Torrent alpha for Apple Silicon macOS.

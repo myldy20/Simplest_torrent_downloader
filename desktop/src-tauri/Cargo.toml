@@ -8,7 +8,7 @@ authors = [
     "Ilya Tolstoukhov / myldy design",
 ]
 license = "Apache-2.0"
-repository = "https://github.com/myldy20/Simpliest_torrent_downloader"
+repository = "https://github.com/myldy20/Simplest_torrent_downloader"
 publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

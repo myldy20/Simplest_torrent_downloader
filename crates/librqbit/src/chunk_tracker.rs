@@ -271,6 +271,9 @@ impl ChunkTracker {
 
     pub fn mark_piece_downloaded(&mut self, idx: ValidPieceIndex) {
         let id = idx.get() as usize;
+        // A re-selection during the final hash check can requeue this piece.
+        // Never leave a piece queued once it is verified and marked as have.
+        self.queue_pieces.set(id, false);
         if !self.have.as_slice()[id] {
             self.have.as_slice_mut().set(id, true);
             let len = self.lengths.piece_length(idx) as u64;
