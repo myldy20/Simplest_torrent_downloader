@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.0-alpha.3
+
+### Added
+
+- checkbox to keep unfinished files under a `.part` suffix until all their pieces are verified;
+- per-file automatic rename on verification, rather than waiting for the whole torrent;
+- resume support for existing `.part` downloads when the setting changes or the app restarts;
+- protection against collisions between normal and temporary filenames.
+
+### Compatibility
+
+- existing normal filenames remain untouched;
+- disabling the setting affects only new files and will not discard incomplete `.part` data;
+- this prevents accidental double-click opening, but doesn't prohibit manually reading an incomplete file.
+
+
 ## 0.1.0-alpha.2
 
 ### Fixed
