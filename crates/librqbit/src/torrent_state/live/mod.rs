@@ -232,6 +232,14 @@ impl TorrentStateLive {
         let down_speed_estimator = SpeedEstimator::default();
         let up_speed_estimator = SpeedEstimator::default();
 
+        // A resumed torrent can already have some completely verified files.
+        // Promote any leftover .part names before network peers start running.
+        for (file_id, info) in paused.metadata.file_infos.iter().enumerate() {
+            if paused.chunk_tracker.is_file_finished(info) {
+                paused.files.on_file_completed(file_id)?;
+            }
+        }
+
         let have_bytes = paused.chunk_tracker.get_hns().have_bytes;
         let lengths = *paused.chunk_tracker.get_lengths();
 
@@ -855,7 +863,11 @@ impl TorrentStateLive {
             .skip_while(|(_, fi)| !fi.piece_range.contains(&id.get()))
             .take_while(|(_, fi)| fi.piece_range.contains(&id.get()))
         {
-            let _remaining = pieces.update_file_have_on_piece_completed(id, idx, file_info);
+            let remaining = pieces.update_file_have_on_piece_completed(id, idx, file_info);
+            if remaining == 0 {
+                // Only release the normal filename once all its pieces are verified.
+                self.files.on_file_completed(idx)?;
+            }
         }
 
         self.streams

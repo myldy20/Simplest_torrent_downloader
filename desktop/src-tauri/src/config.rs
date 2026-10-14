@@ -168,6 +168,9 @@ pub struct RqbitDesktopConfigUpnp {
 pub struct RqbitDesktopConfig {
     pub default_download_location: PathBuf,
 
+    #[serde(default = "protect_incomplete_by_default")]
+    pub protect_incomplete_files: bool,
+
     #[cfg(feature = "disable-upload")]
     #[serde(default)]
     pub disable_upload: bool,
@@ -182,6 +185,10 @@ pub struct RqbitDesktopConfig {
     pub ratelimits: LimitsConfig,
 }
 
+fn protect_incomplete_by_default() -> bool {
+    true
+}
+
 impl Default for RqbitDesktopConfig {
     fn default() -> Self {
         let userdirs = directories::UserDirs::new().expect("directories::UserDirs::new()");
@@ -192,6 +199,7 @@ impl Default for RqbitDesktopConfig {
 
         Self {
             default_download_location: download_folder,
+            protect_incomplete_files: true,
             dht: Default::default(),
             connections: Default::default(),
             upnp: Default::default(),

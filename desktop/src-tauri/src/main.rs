@@ -23,6 +23,7 @@ use librqbit::{
     dht::DhtPersistenceConfig,
     http_api_types::{PeerStatsFilter, PeerStatsSnapshot},
     session_stats::snapshot::SessionStatsSnapshot,
+    storage::{StorageFactoryExt, filesystem::FilesystemStorageFactory},
     tracing_subscriber_config_utils::{InitLoggingOptions, InitLoggingResult, init_logging},
 };
 use librqbit_dualstack_sockets::TcpListener;
@@ -128,6 +129,12 @@ async fn api_from_config(
             connect: Some(connect),
             listen,
             fastresume: config.persistence.fastresume,
+            default_storage_factory: Some(
+                FilesystemStorageFactory {
+                    use_part_files: config.protect_incomplete_files,
+                }
+                .boxed(),
+            ),
             ratelimits: config.ratelimits,
             #[cfg(feature = "disable-upload")]
             disable_upload: config.disable_upload,

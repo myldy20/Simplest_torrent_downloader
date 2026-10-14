@@ -46,6 +46,7 @@ export interface LimitsConfig {
 
 export interface RqbitDesktopConfig {
   default_download_location: PathLike;
+  protect_incomplete_files: boolean;
   disable_upload?: boolean;
   dht: RqbitDesktopConfigDht;
   connections: RqbitDesktopConfigConnections;

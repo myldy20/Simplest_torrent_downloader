@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.2"><img alt="Download for Apple Silicon macOS" src="https://img.shields.io/badge/download-Apple%20Silicon%20macOS-black?style=for-the-badge&logo=apple"></a>
+  <a href="https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.3"><img alt="Download for Apple Silicon macOS" src="https://img.shields.io/badge/download-Apple%20Silicon%20macOS-black?style=for-the-badge&logo=apple"></a>
 </p>
 
 <p align="center">
-  <img alt="Version: 0.1.0 alpha 2" src="https://img.shields.io/badge/version-0.1.0--alpha.2-6c70f5.svg">
+  <img alt="Version: 0.1.0 alpha 3" src="https://img.shields.io/badge/version-0.1.0--alpha.2-6c70f5.svg">
   <a href="LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-blue.svg"></a>
   <img alt="Engine: rqbit" src="https://img.shields.io/badge/engine-rqbit-5b7cfa.svg">
 </p>
@@ -24,7 +24,7 @@ This is the client for the moment when you need to download a 100 MB file and la
 
 The current build supports **Apple Silicon Macs**: M1, M2, M3, M4 and newer.
 
-1. Open the [v0.1.0-alpha.2 release](https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.2).
+1. Open the [v0.1.0-alpha.3 release](https://github.com/myldy20/Simplest_torrent_downloader/releases/tag/v0.1.0-alpha.3).
 2. Download the `.dmg` file.
 3. Open it and move **Simplest Torrent.app** to `/Applications`.
 4. The alpha is not signed or notarized yet. Open Terminal once and run:
@@ -52,12 +52,15 @@ The default destination is your macOS `Downloads` folder. Enter an absolute path
 
 Missing folders are created automatically. Changing the destination affects new downloads; files already downloaded stay where they are.
 
+**Unfinished files:** Settings also has a checkbox to append `.part` to files while downloading. Once all pieces of each file have been verified, Simplest Torrent renames it to the original filename automatically, so it appears as an ordinary file only when ready. This prevents accidental opening via file associations, not intentional manual opening of `.part`. The setting only changes how new files are named; existing partial downloads are reused as they were.
+
 ## Intentionally small feature set
 
 - `.torrent` files and magnet links;
 - immediate download to a configured folder;
 - progress, speed and remaining time;
 - pause and resume;
+- optional unfinished-file protection: keep files as `.part` until all their pieces verify (enabled by default for newly created files);
 - session restore after restarting the app;
 - automatic stop after completion;
 - remove from the list without deleting downloaded files.
@@ -66,7 +69,7 @@ That is intentionally almost the entire product.
 
 ## Current status
 
-**0.1.0-alpha.2** is an early public alpha, tested on an Apple Silicon Mac.
+**0.1.0-alpha.3** is an early public alpha, tested on an Apple Silicon Mac.
 
 Known limitation: the application is currently distributed without an Apple Developer ID signature or notarization, so the one-time Terminal command above is required on recent macOS versions.
 

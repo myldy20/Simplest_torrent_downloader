@@ -24,7 +24,11 @@ use super::opened_file::OpenedFile;
 const MAX_CACHED_FILES: usize = 128;
 
 #[derive(Default, Clone, Copy)]
-pub struct FilesystemStorageFactory {}
+pub struct FilesystemStorageFactory {
+    /// Add .part to newly created files until their contents are verified.
+    /// Defaults to false for existing librqbit callers.
+    pub use_part_files: bool,
+}
 
 impl StorageFactory for FilesystemStorageFactory {
     type Storage = FilesystemStorage;
@@ -38,6 +42,8 @@ impl StorageFactory for FilesystemStorageFactory {
             output_folder: shared.options.output_folder.clone(),
             opened_files: Default::default(),
             recent_files: Default::default(),
+            pending_final_paths: Default::default(),
+            use_part_files: self.use_part_files,
         })
     }
 
@@ -50,6 +56,34 @@ pub struct FilesystemStorage {
     pub(crate) output_folder: PathBuf,
     pub(crate) opened_files: Vec<OpenedFile>,
     recent_files: Mutex<VecDeque<usize>>,
+    pending_final_paths: Mutex<Vec<Option<PathBuf>>>,
+    use_part_files: bool,
+}
+
+/// Preserve existing download locations when the option is toggled or a
+/// torrent resumes: an already-created regular file always remains regular,
+/// and an existing .part is always reused, regardless of the current option.
+fn resolve_download_path(
+    final_path: &Path,
+    use_part_files: bool,
+) -> anyhow::Result<(PathBuf, Option<PathBuf>)> {
+    let mut part_name = final_path.as_os_str().to_os_string();
+    part_name.push(".part");
+    let part_path = PathBuf::from(part_name);
+    if final_path.exists() && part_path.exists() {
+        anyhow::bail!(
+            "both completed and unfinished paths exist: {:?} and {:?}",
+            final_path,
+            part_path
+        );
+    }
+    if final_path.exists() {
+        return Ok((final_path.to_path_buf(), None));
+    }
+    if use_part_files || part_path.exists() {
+        return Ok((part_path, Some(final_path.to_path_buf())));
+    }
+    Ok((final_path.to_path_buf(), None))
 }
 
 impl FilesystemStorage {
@@ -103,10 +137,13 @@ impl FilesystemStorage {
             file.close();
         }
         recent.clear();
+        let final_paths = std::mem::take(&mut *self.pending_final_paths.lock());
 
         Ok(Self {
             opened_files: files,
             recent_files: Default::default(),
+            pending_final_paths: Mutex::new(final_paths),
+            use_part_files: self.use_part_files,
             output_folder: self.output_folder.clone(),
         })
     }
@@ -139,7 +176,38 @@ impl TorrentStorage for FilesystemStorage {
                 self.opened_files[file_id].close();
             }
         }
-        Ok(std::fs::remove_file(self.output_folder.join(filename))?)
+        let final_path = self.output_folder.join(filename);
+        let part_path = {
+            let pending = self.pending_final_paths.lock();
+            pending
+                .get(file_id)
+                .context("no such file")?
+                .as_ref()
+                .map(|_| {
+                    let mut suffix = final_path.as_os_str().to_os_string();
+                    suffix.push(".part");
+                    PathBuf::from(suffix)
+                })
+        };
+        Ok(std::fs::remove_file(part_path.unwrap_or(final_path))?)
+    }
+
+    fn on_file_completed(&self, file_id: usize) -> anyhow::Result<()> {
+        let mut recent = self.recent_files.lock();
+        let mut pending = self.pending_final_paths.lock();
+        let target = match pending.get(file_id).context("no such file")?.as_ref() {
+            Some(target) => target.clone(),
+            None => return Ok(()),
+        };
+        if let Some(index) = recent.iter().position(|&id| id == file_id) {
+            recent.remove(index);
+        }
+        self.opened_files
+            .get(file_id)
+            .context("no such file")?
+            .rename_closed_to(&target)?;
+        pending[file_id] = None;
+        Ok(())
     }
 
     fn ensure_file_length(&self, file_id: usize, len: u64) -> anyhow::Result<()> {
@@ -169,6 +237,12 @@ impl TorrentStorage for FilesystemStorage {
         metadata: &TorrentMetadata,
     ) -> anyhow::Result<()> {
         let mut files = Vec::<OpenedFile>::new();
+        let mut final_paths = Vec::with_capacity(metadata.file_infos.len());
+        let member_names: std::collections::HashSet<_> = metadata
+            .file_infos
+            .iter()
+            .map(|info| info.relative_filename.as_path())
+            .collect();
         for file_details in metadata.file_infos.iter() {
             let mut full_path = self.output_folder.clone();
             let relative_path = &file_details.relative_filename;
@@ -176,38 +250,63 @@ impl TorrentStorage for FilesystemStorage {
 
             if file_details.attrs.padding {
                 files.push(OpenedFile::new_dummy());
+                final_paths.push(None);
                 continue;
             };
-            std::fs::create_dir_all(full_path.parent().context("bug: no parent")?)?;
+            // A torrent can legitimately contain both "track.mid" and
+            // "track.mid.part". Do not let a staging name alias that other
+            // member's real filename, even when the setting is off.
+            let mut part_member = relative_path.as_os_str().to_os_string();
+            part_member.push(".part");
+            let member_collision = member_names.contains(Path::new(&part_member));
+            let (download_path, final_path) = if member_collision {
+                if self.use_part_files {
+                    anyhow::bail!(
+                        "cannot protect incomplete file {:?}: .part name collides with a torrent member; disable incomplete-file protection for this torrent",
+                        relative_path
+                    );
+                }
+                (full_path.clone(), None)
+            } else {
+                resolve_download_path(&full_path, self.use_part_files)?
+            };
+            std::fs::create_dir_all(download_path.parent().context("bug: no parent")?)?;
             let f = if shared.options.allow_overwrite {
                 OpenOptions::new()
                     .create(true)
                     .truncate(false)
                     .read(true)
                     .write(true)
-                    .open(&full_path)
-                    .with_context(|| format!("error opening {full_path:?} in read/write mode"))?
+                    .open(&download_path)
+                    .with_context(|| {
+                        format!("error opening {download_path:?} in read/write mode")
+                    })?
             } else {
                 // create_new does not seem to work with read(true), so calling this twice.
                 OpenOptions::new()
                     .create_new(true)
                     .write(true)
-                    .open(&full_path)
+                    .open(&download_path)
                     .with_context(|| {
                         format!(
                             "error creating a new file (because allow_overwrite = false) {:?}",
-                            &full_path
+                            &download_path
                         )
                     })?;
-                OpenOptions::new().read(true).write(true).open(&full_path)?
+                OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(&download_path)?
             };
             // Avoid holding one descriptor for every member of a multi-file
             // torrent. Some small torrents contain tens of thousands of files.
             drop(f);
-            files.push(OpenedFile::new_closed(full_path));
+            files.push(OpenedFile::new_closed(download_path));
+            final_paths.push(final_path);
         }
 
         self.recent_files.lock().clear();
+        *self.pending_final_paths.lock() = final_paths;
         self.opened_files = files;
         Ok(())
     }
@@ -232,6 +331,8 @@ mod tests {
             output_folder: temp.path().to_path_buf(),
             opened_files: files,
             recent_files: Mutex::new(VecDeque::new()),
+            pending_final_paths: Mutex::new(vec![None; count]),
+            use_part_files: false,
         };
         (temp, storage)
     }
@@ -259,6 +360,47 @@ mod tests {
         let mut result = [0u8; 1];
         storage.pread_exact(0, 0, &mut result).unwrap();
         assert_eq!(result, [123]);
+    }
+
+    #[test]
+    fn part_files_are_finalized_only_when_notified() {
+        use super::resolve_download_path;
+        let temp = tempfile::tempdir().unwrap();
+        let final_path = temp.path().join("test.mid");
+        let (part_path, finish_at) = resolve_download_path(&final_path, true).unwrap();
+        assert_eq!(part_path.file_name().unwrap(), "test.mid.part");
+        std::fs::write(&part_path, b"content").unwrap();
+
+        let storage = FilesystemStorage {
+            output_folder: temp.path().to_path_buf(),
+            opened_files: vec![OpenedFile::new_closed(part_path.clone())],
+            recent_files: Mutex::new(VecDeque::new()),
+            pending_final_paths: Mutex::new(vec![finish_at]),
+            use_part_files: true,
+        };
+        assert!(!final_path.exists());
+        let mut buffer = [0u8; 7];
+        storage.pread_exact(0, 0, &mut buffer).unwrap();
+        assert_eq!(&buffer, b"content");
+        storage.on_file_completed(0).unwrap();
+        assert!(final_path.exists());
+        assert!(!part_path.exists());
+        storage.on_file_completed(0).unwrap();
+        storage.pread_exact(0, 0, &mut buffer).unwrap();
+        assert_eq!(&buffer, b"content");
+    }
+
+    #[test]
+    fn existing_incomplete_download_survives_setting_change() {
+        use super::resolve_download_path;
+        let temp = tempfile::tempdir().unwrap();
+        let final_path = temp.path().join("resuming.wav");
+        std::fs::write(temp.path().join("resuming.wav.part"), b"partial").unwrap();
+        let (selected, finish_at) = resolve_download_path(&final_path, false).unwrap();
+        assert_eq!(selected.file_name().unwrap(), "resuming.wav.part");
+        assert_eq!(finish_at, Some(final_path.clone()));
+        std::fs::write(&final_path, b"other").unwrap();
+        assert!(resolve_download_path(&final_path, true).is_err());
     }
 
     #[test]
