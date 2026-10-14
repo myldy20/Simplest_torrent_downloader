@@ -802,9 +802,12 @@ impl TorrentStateLive {
     }
 
     pub(crate) fn update_only_files(&self, only_files: &HashSet<usize>) -> anyhow::Result<()> {
-        let mut g = self.lock_write("update_only_files");
-        let pt = g.get_pieces_mut()?;
-        let hns = pt.update_only_files(&self.metadata.file_infos, only_files)?;
+        let hns = self
+            .lock_write("update_only_files")
+            .get_pieces_mut()?
+            .update_only_files(&self.metadata.file_infos, only_files)?;
+        // Release the torrent state lock before accessing the peer table.
+        // on_peer_died holds a peer shard while reading the torrent state.
         if !hns.finished() {
             self.reconnect_all_not_needed_peers();
         }
