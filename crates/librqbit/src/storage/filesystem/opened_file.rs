@@ -183,7 +183,10 @@ impl OpenedFile {
             anyhow::bail!("refusing to replace existing file {:?}", destination);
         }
         std::fs::rename(&guard.path, destination).with_context(|| {
-            format!("error finalizing download {:?} -> {:?}", guard.path, destination)
+            format!(
+                "error finalizing download {:?} -> {:?}",
+                guard.path, destination
+            )
         })?;
         guard.path = destination.to_path_buf();
         Ok(())
