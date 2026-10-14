@@ -174,6 +174,21 @@ impl OpenedFile {
         self.file.write().fd.take();
     }
 
+    /// Called after the final piece of this file has been verified.
+    /// Close the descriptor first (also required by Windows), then rename.
+    pub fn rename_closed_to(&self, destination: &std::path::Path) -> anyhow::Result<()> {
+        let mut guard = self.file.write();
+        guard.fd.take();
+        if destination.exists() {
+            anyhow::bail!("refusing to replace existing file {:?}", destination);
+        }
+        std::fs::rename(&guard.path, destination).with_context(|| {
+            format!("error finalizing download {:?} -> {:?}", guard.path, destination)
+        })?;
+        guard.path = destination.to_path_buf();
+        Ok(())
+    }
+
     pub fn new_dummy() -> Self {
         Self {
             file: RwLock::new(Default::default()),
