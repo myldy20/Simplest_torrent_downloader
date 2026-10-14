@@ -63,7 +63,10 @@ pub struct FilesystemStorage {
 /// Preserve existing download locations when the option is toggled or a
 /// torrent resumes: an already-created regular file always remains regular,
 /// and an existing .part is always reused, regardless of the current option.
-fn resolve_download_path(final_path: &Path, use_part_files: bool) -> anyhow::Result<(PathBuf, Option<PathBuf>)> {
+fn resolve_download_path(
+    final_path: &Path,
+    use_part_files: bool,
+) -> anyhow::Result<(PathBuf, Option<PathBuf>)> {
     let mut part_name = final_path.as_os_str().to_os_string();
     part_name.push(".part");
     let part_path = PathBuf::from(part_name);
@@ -176,11 +179,15 @@ impl TorrentStorage for FilesystemStorage {
         let final_path = self.output_folder.join(filename);
         let part_path = {
             let pending = self.pending_final_paths.lock();
-            pending.get(file_id).context("no such file")?.as_ref().map(|_| {
-                let mut suffix = final_path.as_os_str().to_os_string();
-                suffix.push(".part");
-                PathBuf::from(suffix)
-            })
+            pending
+                .get(file_id)
+                .context("no such file")?
+                .as_ref()
+                .map(|_| {
+                    let mut suffix = final_path.as_os_str().to_os_string();
+                    suffix.push(".part");
+                    PathBuf::from(suffix)
+                })
         };
         Ok(std::fs::remove_file(part_path.unwrap_or(final_path))?)
     }
@@ -241,7 +248,8 @@ impl TorrentStorage for FilesystemStorage {
                 final_paths.push(None);
                 continue;
             };
-            let (download_path, final_path) = resolve_download_path(&full_path, self.use_part_files)?;
+            let (download_path, final_path) =
+                resolve_download_path(&full_path, self.use_part_files)?;
             std::fs::create_dir_all(download_path.parent().context("bug: no parent")?)?;
             let f = if shared.options.allow_overwrite {
                 OpenOptions::new()
@@ -250,7 +258,9 @@ impl TorrentStorage for FilesystemStorage {
                     .read(true)
                     .write(true)
                     .open(&download_path)
-                    .with_context(|| format!("error opening {download_path:?} in read/write mode"))?
+                    .with_context(|| {
+                        format!("error opening {download_path:?} in read/write mode")
+                    })?
             } else {
                 // create_new does not seem to work with read(true), so calling this twice.
                 OpenOptions::new()
@@ -263,7 +273,10 @@ impl TorrentStorage for FilesystemStorage {
                             &download_path
                         )
                     })?;
-                OpenOptions::new().read(true).write(true).open(&download_path)?
+                OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(&download_path)?
             };
             // Avoid holding one descriptor for every member of a multi-file
             // torrent. Some small torrents contain tens of thousands of files.
