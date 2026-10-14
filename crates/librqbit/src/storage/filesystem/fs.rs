@@ -238,6 +238,11 @@ impl TorrentStorage for FilesystemStorage {
     ) -> anyhow::Result<()> {
         let mut files = Vec::<OpenedFile>::new();
         let mut final_paths = Vec::with_capacity(metadata.file_infos.len());
+        let member_names: std::collections::HashSet<_> = metadata
+            .file_infos
+            .iter()
+            .map(|info| info.relative_filename.as_path())
+            .collect();
         for file_details in metadata.file_infos.iter() {
             let mut full_path = self.output_folder.clone();
             let relative_path = &file_details.relative_filename;
@@ -248,8 +253,23 @@ impl TorrentStorage for FilesystemStorage {
                 final_paths.push(None);
                 continue;
             };
-            let (download_path, final_path) =
-                resolve_download_path(&full_path, self.use_part_files)?;
+            // A torrent can legitimately contain both "track.mid" and
+            // "track.mid.part". Do not let a staging name alias that other
+            // member's real filename, even when the setting is off.
+            let mut part_member = relative_path.as_os_str().to_os_string();
+            part_member.push(".part");
+            let member_collision = member_names.contains(Path::new(&part_member));
+            let (download_path, final_path) = if member_collision {
+                if self.use_part_files {
+                    anyhow::bail!(
+                        "cannot protect incomplete file {:?}: .part name collides with a torrent member; disable incomplete-file protection for this torrent",
+                        relative_path
+                    );
+                }
+                (full_path.clone(), None)
+            } else {
+                resolve_download_path(&full_path, self.use_part_files)?
+            };
             std::fs::create_dir_all(download_path.parent().context("bug: no parent")?)?;
             let f = if shared.options.allow_overwrite {
                 OpenOptions::new()
