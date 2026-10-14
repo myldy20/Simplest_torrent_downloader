@@ -139,6 +139,41 @@ impl OpenedFile {
         }
     }
 
+    /// Store a file path without retaining a descriptor. The bounded storage cache
+    /// opens it only when the file is actually accessed.
+    pub fn new_closed(path: PathBuf) -> Self {
+        Self {
+            file: RwLock::new(OpenedFileLocked {
+                path,
+                ..Default::default()
+            }),
+        }
+    }
+
+    pub fn open_if_needed(&self) -> anyhow::Result<()> {
+        let mut guard = self.file.write();
+        if guard.fd.is_none() {
+            guard.fd = Some(
+                std::fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(&guard.path)
+                    .with_context(|| format!("error reopening {:?}", guard.path))?,
+            );
+            #[cfg(windows)]
+            {
+                guard.tried_marking_sparse = false;
+            }
+        }
+        Ok(())
+    }
+
+    /// Called by the bounded cache only while holding its global cache lock.
+    /// Outstanding I/O read guards finish before the descriptor is closed.
+    pub fn close(&self) {
+        self.file.write().fd.take();
+    }
+
     pub fn new_dummy() -> Self {
         Self {
             file: RwLock::new(Default::default()),
