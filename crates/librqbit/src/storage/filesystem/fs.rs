@@ -247,7 +247,11 @@ mod tests {
 
         assert_eq!(storage.recent_files.lock().len(), MAX_CACHED_FILES);
         assert_eq!(
-            storage.opened_files.iter().filter(|file| file.lock_read().is_ok()).count(),
+            storage
+                .opened_files
+                .iter()
+                .filter(|file| file.lock_read().is_ok())
+                .count(),
             MAX_CACHED_FILES
         );
 
