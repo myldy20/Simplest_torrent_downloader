@@ -138,6 +138,7 @@ export function SimplestTorrentApp() {
   const [torrents, setTorrents] = useState<TorrentListItem[]>([]);
   const [magnet, setMagnet] = useState("");
   const [folderDraft, setFolderDraft] = useState("");
+  const [protectIncomplete, setProtectIncomplete] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -188,6 +189,7 @@ export function SimplestTorrentApp() {
         if (!active) return;
         setConfig(loadedConfig);
         setFolderDraft(loadedConfig.default_download_location);
+        setProtectIncomplete(loadedConfig.protect_incomplete_files);
         await refresh();
         if (active) timer = window.setInterval(refresh, 1200);
       })
@@ -278,6 +280,7 @@ export function SimplestTorrentApp() {
     const nextConfig = {
       ...config,
       default_download_location: folderDraft.trim(),
+      protect_incomplete_files: protectIncomplete,
     };
     setBusy(true);
     setError(null);
@@ -341,6 +344,18 @@ export function SimplestTorrentApp() {
           <small>
             Use an absolute macOS path. Existing downloads remain where they
             are.
+          </small>
+          <label className="part-setting">
+            <input
+              type="checkbox"
+              checked={protectIncomplete}
+              onChange={(event) => setProtectIncomplete(event.target.checked)}
+            />
+            <span>Keep unfinished files as .part until verified</span>
+          </label>
+          <small>
+            Prevents accidental opening by double-click. Applies to new files;
+            existing downloads keep their current filenames.
           </small>
         </section>
       )}
