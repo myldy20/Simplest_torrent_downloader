@@ -864,7 +864,7 @@ impl TorrentStateLive {
             .take_while(|(_, fi)| fi.piece_range.contains(&id.get()))
         {
             let remaining = pieces.update_file_have_on_piece_completed(id, idx, file_info);
-            if remaining == 0 && pieces.is_file_finished(file_info) {
+            if remaining == 0 {
                 // Only release the normal filename once all its pieces are verified.
                 self.files.on_file_completed(idx)?;
             }
